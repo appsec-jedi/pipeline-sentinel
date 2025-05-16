@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": "2025-05-16T13:46:39.048126-05:00",
+    "command": "curl",
+    "args": [
+      "http://malicious.site"
+    ],
+    "matched_rule": "suspicious_curl",
+    "severity": "high"
+  }
+]

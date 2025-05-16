@@ -51,7 +51,7 @@ var (
 				os.Exit(1)
 			}
 
-			color.Yellow("📋 Loaded %d rules", len(ruleSet.Rules))
+			color.Yellow("Loaded %d rules", len(ruleSet.Rules))
 			for _, rule := range ruleSet.Rules {
 				fmt.Printf("→ [%s] %s: %s (match: '%s')\n",
 					rule.Severity, rule.ID, rule.Description, rule.MatchCommand)
@@ -96,9 +96,9 @@ var (
 			}
 			err = logging.WriteDetectionsToFile(allDetections, "detections.json")
 			if err != nil {
-				color.Red("❌ Failed to write detections to file: %v", err)
+				color.Red("Failed to write detections to file: %v", err)
 			} else {
-				color.Green("📁 Detections saved to detections.json")
+				color.Green("Detections saved to detections.json")
 			}
 		},
 	}
