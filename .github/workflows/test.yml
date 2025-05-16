@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
+      - name: Force download of yaml.v3
+        run: go get gopkg.in/yaml.v3
+
       - name: Run Go tests
         run: go test ./...
 
