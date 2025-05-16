@@ -1,0 +1,4 @@
+log:
+  level: info
+
+rules_file: config/rules.yaml

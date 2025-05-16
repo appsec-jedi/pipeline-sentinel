@@ -1,0 +1,10 @@
+rules:
+  - id: suspicious_curl
+    description: Detect use of curl with a remote URL
+    match_command: "curl"
+    severity: "high"
+
+  - id: python_inline_exec
+    description: Detect inline Python command execution
+    match_command: "python -c"
+    severity: "medium"
