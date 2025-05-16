@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/appsec-jedi/pipeline-sentinel/pkg/events"
+	"github.com/appsec-jedi/pipeline-sentinel/pkg/logging"
 	"github.com/appsec-jedi/pipeline-sentinel/pkg/rules"
 )
 
@@ -40,6 +41,7 @@ var (
 		Use:   "pipeline-sentinel",
 		Short: "Pipeline Sentinel watches for suspicious activity in CI/CD jobs",
 		Run: func(cmd *cobra.Command, args []string) {
+			var allDetections []events.Detection
 			color.Green("Pipeline Sentinel agent started.")
 			fmt.Println("Loaded config from:", viper.ConfigFileUsed())
 			rulesPath := "config/rules.yaml"
@@ -81,6 +83,22 @@ var (
 				} else {
 					color.Green("Command passed: No matches.")
 				}
+				for _, match := range matches {
+					detection := events.Detection{
+						Timestamp:   event.Timestamp,
+						Command:     event.Command,
+						Args:        event.Args,
+						MatchedRule: match.ID,
+						Severity:    match.Severity,
+					}
+					allDetections = append(allDetections, detection)
+				}
+			}
+			err = logging.WriteDetectionsToFile(allDetections, "detections.json")
+			if err != nil {
+				color.Red("❌ Failed to write detections to file: %v", err)
+			} else {
+				color.Green("📁 Detections saved to detections.json")
 			}
 		},
 	}
