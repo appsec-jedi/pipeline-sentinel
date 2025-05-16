@@ -1,11 +1,51 @@
 [
   {
-    "timestamp": "2025-05-16T13:51:57.277084-05:00",
+    "timestamp": "2025-05-16T15:29:36.586221-05:00",
     "command": "curl",
     "args": [
       "http://malicious.site"
     ],
     "matched_rule": "suspicious_curl",
+    "severity": "high"
+  },
+  {
+    "timestamp": "2025-05-16T15:29:36.629041-05:00",
+    "command": "python3",
+    "args": [
+      "-c",
+      "import os"
+    ],
+    "matched_rule": "suspicious_python_inline",
+    "severity": "high"
+  },
+  {
+    "timestamp": "2025-05-16T15:29:36.629041-05:00",
+    "command": "python3",
+    "args": [
+      "-c",
+      "import os"
+    ],
+    "matched_rule": "suspicious_python3_inline",
+    "severity": "high"
+  },
+  {
+    "timestamp": "2025-05-16T15:29:36.65705-05:00",
+    "command": "python3",
+    "args": [
+      "-c",
+      "import os; os.system('rm -rf /')"
+    ],
+    "matched_rule": "suspicious_python_inline",
+    "severity": "high"
+  },
+  {
+    "timestamp": "2025-05-16T15:29:36.65705-05:00",
+    "command": "python3",
+    "args": [
+      "-c",
+      "import os; os.system('rm -rf /')"
+    ],
+    "matched_rule": "suspicious_python3_inline",
     "severity": "high"
   }
 ]

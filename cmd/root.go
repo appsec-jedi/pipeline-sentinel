@@ -40,6 +40,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "pipeline-sentinel",
 		Short: "Pipeline Sentinel watches for suspicious activity in CI/CD jobs",
+		// Create functionality when comamand is called
 		Run: func(cmd *cobra.Command, args []string) {
 			var allDetections []events.Detection
 			color.Green("Pipeline Sentinel agent started.")
@@ -59,8 +60,9 @@ var (
 			jobSteps := [][]string{
 				{"echo", "Hello, world!"},
 				{"curl", "http://malicious.site"},
-				{"python", "-c", "import os"},
+				{"python3", "-c", "import os"},
 				{"ls", "-la"},
+				{"python3", "-c", "import os; os.system('rm -rf /')"},
 			}
 			for _, step := range jobSteps {
 				cmd := step[0]
@@ -131,8 +133,8 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		color.Blue("📘 Using config file: %s", viper.ConfigFileUsed())
+		color.Blue("Using config file: %s", viper.ConfigFileUsed())
 	} else {
-		color.Red("⚠️  Could not read config: %s", err)
+		color.Red("Could not read config: %s", err)
 	}
 }

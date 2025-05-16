@@ -1,10 +1,11 @@
 package rules
 
 type Rule struct {
-	ID           string `yaml:"id"`
-	Description  string `yaml:"description"`
-	MatchCommand string `yaml:"match_command"`
-	Severity     string `yaml:"severity"`
+	ID           string   `yaml:"id"`
+	Description  string   `yaml:"description"`
+	MatchCommand string   `yaml:"match_command"`
+	MatchArgs    []string `yaml:"match_args"`
+	Severity     string   `yaml:"severity"`
 }
 
 type RuleSet struct {
