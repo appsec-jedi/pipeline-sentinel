@@ -1,0 +1,36 @@
+
+- id: suspicious_curl
+  description: Detect use of curl with a remote URL
+  match_command: "curl"
+  severity: "high"
+
+- id: python_inline_exec
+  description: Detect inline Python command execution
+  match_command: "python -c"
+  severity: "medium"
+
+- id: python3_inline_exec
+  description: Detect inline Python command execution
+  match_command: "python3 -c"
+  severity: "medium"
+
+- id: suspicious_python_inline
+  description: Detect inline Python with os/system usage
+  match_command: "python"
+  match_args:
+    - "import os"
+    - "os.system"
+  severity: "high"
+
+- id: suspicious_python3_inline
+  description: Detect inline Python with os/system usage
+  match_command: "python3"
+  match_args:
+    - "import os"
+    - "os.system"
+  severity: "high"
+
+- id: recon_detected
+  description: Detect whoami used for recon
+  match_command: "whoami"
+  severity: "high"
