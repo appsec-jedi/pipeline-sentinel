@@ -1,36 +1,127 @@
+# -----------------------------------------------------------------
+# Network Activity & Remote Execution
+# -----------------------------------------------------------------
+- id: curl_remote_script_execution
+  description: "Detects downloading a remote script and executing it with a shell"
+  severity: "critical"
+  match_all:
+    - "curl"
+    - "|"
+    - "bash"
 
-- id: suspicious_curl
-  description: Detect use of curl with a remote URL
-  match_command: "curl"
+- id: curl_remote_script_execution
+  description: "Detects downloading a remote script and executing it with a shell"
+  severity: "critical"
+  match_all:
+    - "curl"
+    - "|"
+    - "sh"
+
+- id: curl_remote_script_execution
+  description: "Detects downloading a remote script and executing it with a shell"
+  severity: "critical"
+  match_all:
+    - "curl"
+    - "|"
+    - "zsh"
+
+- id: wget_remote_script_execution
+  description: "Detects downloading a remote script with wget and executing it"
+  severity: "critical"
+  match_all:
+    - "wget"
+    - "-O -"
+    - "|"
+    - "bash"
+
+- id: suspicious_netcat_usage
+  description: "Detects netcat (nc) being used, which could be for a reverse shell or data transfer"
+  match_command: "nc "
   severity: "high"
 
-- id: python_inline_exec
-  description: Detect inline Python command execution
-  match_command: "python -c"
-  severity: "medium"
-
-- id: python3_inline_exec
-  description: Detect inline Python command execution
-  match_command: "python3 -c"
-  severity: "medium"
-
-- id: suspicious_python_inline
-  description: Detect inline Python with os/system usage
-  match_command: "python"
-  match_args:
-    - "import os"
-    - "os.system"
-  severity: "high"
-
-- id: suspicious_python3_inline
-  description: Detect inline Python with os/system usage
-  match_command: "python3"
-  match_args:
-    - "import os"
-    - "os.system"
-  severity: "high"
-
-- id: recon_detected
-  description: Detect whoami used for recon
+# -----------------------------------------------------------------
+# Reconnaissance & Discovery
+# -----------------------------------------------------------------
+- id: recon_whoami
+  description: "Detects 'whoami' used for user discovery"
   match_command: "whoami"
+  severity: "medium"
+
+- id: recon_hostname
+  description: "Detects 'hostname' used for host discovery"
+  match_command: "hostname"
+  severity: "medium"
+
+- id: recon_network_config
+  description: "Detects 'ifconfig' or 'ip addr' used for network discovery"
+  match_command: "ifconfig"
+  severity: "medium"
+
+- id: recon_system_info
+  description: "Detects 'uname -a' used for kernel version discovery"
+  match_command: "uname -a"
+  severity: "medium"
+
+# -----------------------------------------------------------------
+# Credential Access
+# -----------------------------------------------------------------
+- id: read_aws_credentials
+  description: "Detects an attempt to read the AWS credentials file"
+  match_command: "cat /root/.aws/credentials"
+  severity: "critical"
+
+- id: read_aws_credentials
+  description: "Detects an attempt to read the AWS credentials file"
+  match_command: "cat ~/.aws/credentials"
+  severity: "critical"
+
+- id: read_ssh_keys
+  description: "Detects an attempt to read common SSH private key files"
+  match_command: "cat /root/.ssh/id_rsa"
+  severity: "critical"
+
+- id: read_ssh_keys
+  description: "Detects an attempt to read common SSH private key files"
+  match_command: "cat ~/.ssh/id_rsa"
+  severity: "critical"
+
+- id: list_kubernetes_secrets
+  description: "Detects an attempt to list Kubernetes secrets"
+  match_all:
+    - "kubectl"
+    - "get"
+    - "secret"
+  severity: "high"
+
+- id: dump_environment_variables
+  description: "Detects an attempt to dump all environment variables, which may contain secrets"
+  match_command: "env"
+  severity: "low"
+
+
+# -----------------------------------------------------------------
+# Suspicious Scripting & Inline Execution
+# -----------------------------------------------------------------
+- id: python_inline_os_import
+  description: "Detects Python inline execution that also imports the 'os' module"
+  severity: "high"
+  match_all:
+    - "python"
+    - "-c"
+    - "import os"
+
+- id: python_inline_socket_import
+  description: "Detects Python inline execution that also imports the 'socket' module, possibly for a reverse shell"
+  severity: "high"
+  match_all:
+    - "python"
+    - "-c"
+    - "import socket"
+
+# -----------------------------------------------------------------
+# Defense Evasion
+# -----------------------------------------------------------------
+- id: clear_bash_history
+  description: "Detects an attempt to clear shell history"
+  match_command: "history -c"
   severity: "high"
