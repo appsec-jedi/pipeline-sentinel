@@ -11,7 +11,6 @@ jobs:
       sentinel:
         image: pipeline-sentinel-app
         options: >-
-          --name sentinel-container
           --pid=host
           --cap-add=SYS_ADMIN
           -v /sys/kernel/debug:/sys/kernel/debug:ro
@@ -33,4 +32,4 @@ jobs:
 
       - name: Display Sentinel Logs
         if: always()
-        run: docker logs sentinel-container
+        run: docker logs sentinel
