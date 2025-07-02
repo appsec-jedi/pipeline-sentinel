@@ -4,12 +4,39 @@ run-name: Monitoring build for malicious activity
 on: [push]
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          docker build -t $IMAGE_ID .
+          docker push $IMAGE_ID
+
   test-with-sentinel:
+    needs: build
     runs-on: ubuntu-latest
 
     services:
       sentinel:
-        image: pipeline-sentinel-app
+        image: ghcr.io/${{ github.repository }}:${{ github.sha }}
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
         options: >-
           --pid=host
           --cap-add=SYS_ADMIN
@@ -20,13 +47,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Build the Sentinel Docker image
-        run: docker build -t pipeline-sentinel-app .
-
       - name: Run Fake Build Script for Testing
         run: |
           echo "Running the build script that the sentinel will monitor..."
-          # We give it permissions to run and then execute it
           chmod +x ./fake_build_script.sh
           ./fake_build_script.sh
 
