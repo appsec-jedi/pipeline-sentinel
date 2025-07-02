@@ -1,0 +1,36 @@
+name: Pipeline Sentinel Test
+run-name: Monitoring build for malicious activity
+
+on: [push]
+
+jobs:
+  test-with-sentinel:
+    runs-on: ubuntu-latest
+
+    services:
+      sentinel:
+        image: pipeline-sentinel-app
+        options: >-
+          --name sentinel-container
+          --pid=host
+          --cap-add=SYS_ADMIN
+          -v /sys/kernel/debug:/sys/kernel/debug:ro
+          -v ${{ github.workspace }}/rules.yaml:/app/rules.yaml:ro
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build the Sentinel Docker image
+        run: docker build -t pipeline-sentinel-app .
+
+      - name: Run Fake Build Script for Testing
+        run: |
+          echo "Running the build script that the sentinel will monitor..."
+          # We give it permissions to run and then execute it
+          chmod +x ./fake_build_script.sh
+          ./fake_build_script.sh
+
+      - name: Display Sentinel Logs
+        if: always()
+        run: docker logs sentinel-container

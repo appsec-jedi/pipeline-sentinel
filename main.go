@@ -90,8 +90,9 @@ func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules 
 					if word == rule.MatchCommand || strings.HasSuffix(word, "/"+rule.MatchCommand) {
 						switch rule.Severity {
 						case "critical":
-							color.Red("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+							color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 								rule.Id, rule.Severity, fullCommand)
+							os.Exit(1)
 						case "high":
 							color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 								rule.Id, rule.Severity, fullCommand)
@@ -124,8 +125,9 @@ func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules 
 					}
 					switch rule.Severity {
 					case "critical":
-						color.Red("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+						color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 							rule.Id, rule.Severity, fullCommand)
+						os.Exit(1)
 					case "high":
 						color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 							rule.Id, rule.Severity, fullCommand)
