@@ -15,6 +15,7 @@ import (
 
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/perf"
+	"github.com/fatih/color"
 
 	"gopkg.in/yaml.v3"
 )
@@ -33,27 +34,27 @@ type Rule struct {
 	Severity     string   `yaml:"severity"`
 	MatchCommand string   `yaml:"match_command,omitempty"`
 	MatchAll     []string `yaml:"match_all,omitempty"`
+	white_list   []string `yaml:"white_list,omitempty"`
 }
 
 func readFullCommand(pid uint32, fallback string) string {
-	procCommandline := fmt.Sprintf("/proc/%d/cmdline", pid)
-	commandlineBytes, err := os.ReadFile(procCommandline)
+	procCommandLine := fmt.Sprintf("/proc/%d/cmdline", pid)
+	var commandLineBytes []byte
+	var err error
+
+	for range 5 {
+		commandLineBytes, err = os.ReadFile(procCommandLine)
+		if err == nil {
+			break
+		}
+		time.Sleep(3 * time.Millisecond)
+	}
+
 	if err != nil {
 		return fallback
 	}
 
-	fullCommand := strings.ReplaceAll(string(commandlineBytes), "\x00", " ")
-
-	baseCommand := strings.Fields(fullCommand)
-	if len(baseCommand) > 0 && (strings.HasSuffix(baseCommand[0], "bash") || strings.HasSuffix(baseCommand[0], "sh")) {
-		time.Sleep(5 * time.Millisecond)
-		commandlineBytes, err = os.ReadFile(procCommandline)
-		if err == nil {
-			return strings.ReplaceAll(string(commandlineBytes), "\x00", " ")
-		}
-	}
-
-	return fullCommand
+	return strings.ReplaceAll(string(commandLineBytes), "\x00", " ")
 }
 
 func loadRules() []Rule {
@@ -79,13 +80,27 @@ func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules 
 
 	for event := range eventsChannel {
 		fullCommand := readFullCommand(event.PID, string(bytes.TrimRight(event.BinPath[:], "\x00")))
+		words := strings.Fields(fullCommand)
+
+		// fmt.Printf("\nFull command: %s\n", fullCommand)
 
 		for _, rule := range rules {
 			if rule.MatchCommand != "" {
-				if strings.Contains(fullCommand, rule.MatchCommand) {
-					log.Printf("[ALERT] Rule '%s' triggered (Severity: %s)\n\tDescription: %s\n\tCommand: %s\n",
-						rule.Id, rule.Severity, rule.Description, fullCommand)
-					break
+				for _, word := range words {
+					if word == rule.MatchCommand || strings.HasSuffix(word, "/"+rule.MatchCommand) {
+						switch rule.Severity {
+						case "critical":
+							color.Red("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+								rule.Id, rule.Severity, fullCommand)
+						case "high":
+							color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+								rule.Id, rule.Severity, fullCommand)
+						default:
+							color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+								rule.Id, rule.Severity, fullCommand)
+						}
+						break
+					}
 				}
 			}
 
@@ -98,8 +113,26 @@ func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules 
 					}
 				}
 				if allFound {
-					log.Printf("[ALERT] Rule '%s' triggered (Severity: %s)\n\tDescription: %s\n\tCommand: %s\n",
-						rule.Id, rule.Severity, rule.Description, fullCommand)
+					if len(rule.white_list) > 0 {
+						for _, allowed := range rule.white_list {
+							if strings.Contains(fullCommand, allowed) {
+								fmt.Println("\nWhitelisted command found:")
+								fmt.Printf("\t%s", fullCommand)
+								break
+							}
+						}
+					}
+					switch rule.Severity {
+					case "critical":
+						color.Red("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+							rule.Id, rule.Severity, fullCommand)
+					case "high":
+						color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+							rule.Id, rule.Severity, fullCommand)
+					default:
+						color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
+							rule.Id, rule.Severity, fullCommand)
+					}
 					break
 				}
 			}

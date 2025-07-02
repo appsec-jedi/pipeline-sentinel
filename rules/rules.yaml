@@ -24,6 +24,18 @@
     - "curl"
     - "|"
     - "zsh"
+  
+- id: curl_post_execution
+  description: "Detects potential data exfiltration"
+  severity: "critical"
+  match_all:
+    - "curl"
+    - "-X"
+    - "POST"
+  white_list: # These should be upated to match known flows i.e. artifactory.mycompany.com, hooks.slack.com
+    - "artifactory" 
+    - "slack" 
+    - "codevoc"
 
 - id: wget_remote_script_execution
   description: "Detects downloading a remote script with wget and executing it"
@@ -36,7 +48,7 @@
 
 - id: suspicious_netcat_usage
   description: "Detects netcat (nc) being used, which could be for a reverse shell or data transfer"
-  match_command: "nc "
+  match_command: "nc"
   severity: "high"
 
 # -----------------------------------------------------------------
@@ -59,7 +71,9 @@
 
 - id: recon_system_info
   description: "Detects 'uname -a' used for kernel version discovery"
-  match_command: "uname -a"
+  match_all:
+    - "uname"
+    - "-a"
   severity: "medium"
 
 # -----------------------------------------------------------------
@@ -67,22 +81,30 @@
 # -----------------------------------------------------------------
 - id: read_aws_credentials
   description: "Detects an attempt to read the AWS credentials file"
-  match_command: "cat /root/.aws/credentials"
+  match_all:
+    - "cat"
+    - "/root/.aws/credentials"
   severity: "critical"
 
 - id: read_aws_credentials
   description: "Detects an attempt to read the AWS credentials file"
-  match_command: "cat ~/.aws/credentials"
+  match_all:
+    - "cat"
+    - "~/.aws/credentials"
   severity: "critical"
 
 - id: read_ssh_keys
   description: "Detects an attempt to read common SSH private key files"
-  match_command: "cat /root/.ssh/id_rsa"
+  match_all:
+    - "cat"
+    - "/root/.ssh/id_rsa"
   severity: "critical"
 
 - id: read_ssh_keys
   description: "Detects an attempt to read common SSH private key files"
-  match_command: "cat ~/.ssh/id_rsa"
+  match_all:
+    - "cat"
+    - "~/.ssh/id_rsa"
   severity: "critical"
 
 - id: list_kubernetes_secrets
@@ -123,5 +145,7 @@
 # -----------------------------------------------------------------
 - id: clear_bash_history
   description: "Detects an attempt to clear shell history"
-  match_command: "history -c"
+  match_all:
+    - "history"
+    - "-c"
   severity: "high"
