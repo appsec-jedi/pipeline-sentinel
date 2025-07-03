@@ -48,25 +48,29 @@
 
 - id: suspicious_netcat_usage
   description: "Detects netcat (nc) being used, which could be for a reverse shell or data transfer"
-  match_command: "nc"
   severity: "high"
+  match_all:
+    - "nc"
 
 # -----------------------------------------------------------------
 # Reconnaissance & Discovery
 # -----------------------------------------------------------------
 - id: recon_whoami
   description: "Detects 'whoami' used for user discovery"
-  match_command: "whoami"
+  match_all: 
+  - "whoami"
   severity: "medium"
 
 - id: recon_hostname
   description: "Detects 'hostname' used for host discovery"
-  match_command: "hostname"
+  match_all: 
+  - "hostname"
   severity: "medium"
 
 - id: recon_network_config
   description: "Detects 'ifconfig' or 'ip addr' used for network discovery"
-  match_command: "ifconfig"
+  match_all: 
+  - "ifconfig"
   severity: "medium"
 
 - id: recon_system_info
@@ -102,23 +106,25 @@
 
 - id: read_ssh_keys
   description: "Detects an attempt to read common SSH private key files"
+  severity: "critical"
   match_all:
     - "cat"
     - "~/.ssh/id_rsa"
-  severity: "critical"
 
 - id: list_kubernetes_secrets
   description: "Detects an attempt to list Kubernetes secrets"
+  severity: "high"
   match_all:
     - "kubectl"
     - "get"
     - "secret"
-  severity: "high"
+  
 
 - id: dump_environment_variables
   description: "Detects an attempt to dump all environment variables, which may contain secrets"
-  match_command: "env"
   severity: "low"
+  match_all:
+    - "env"
 
 
 # -----------------------------------------------------------------
