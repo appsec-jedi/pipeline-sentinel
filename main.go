@@ -75,14 +75,12 @@ func loadRules() []Rule {
 	return rules
 }
 
-func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules []Rule) {
+func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsChannel <-chan Event, rules []Rule, failBuild chan<- bool) {
 	defer waitGroup.Done()
 
 	for event := range eventsChannel {
 		fullCommand := readFullCommand(event.PID, string(bytes.TrimRight(event.BinPath[:], "\x00")))
 		words := strings.Fields(fullCommand)
-
-		// fmt.Printf("\nFull command: %s\n", fullCommand)
 
 		for _, rule := range rules {
 			if rule.MatchCommand != "" {
@@ -92,7 +90,9 @@ func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules 
 						case "critical":
 							color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 								rule.Id, rule.Severity, fullCommand)
-							os.Exit(1)
+							failBuild <- true
+							stopper <- syscall.SIGTERM
+							return
 						case "high":
 							color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 								rule.Id, rule.Severity, fullCommand)
@@ -127,7 +127,9 @@ func processEvents(waitGroup *sync.WaitGroup, eventsChannel <-chan Event, rules 
 					case "critical":
 						color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 							rule.Id, rule.Severity, fullCommand)
-						os.Exit(1)
+						failBuild <- true
+						stopper <- syscall.SIGTERM
+						return
 					case "high":
 						color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
 							rule.Id, rule.Severity, fullCommand)
@@ -166,9 +168,10 @@ func main() {
 
 	var waitGroup sync.WaitGroup
 	eventsChannel := make(chan Event, 100)
+	failBuild := make(chan bool, 1)
 
 	waitGroup.Add(1)
-	go processEvents(&waitGroup, eventsChannel, rules)
+	go processEvents(&waitGroup, stopper, eventsChannel, rules, failBuild)
 
 	log.Println("Successfully loaded and attached eBPF program. Waiting for events...")
 
@@ -205,11 +208,18 @@ func main() {
 		eventsChannel <- event
 	}
 
-	log.Println("Closing event channel...")
+	log.Println("Collection stopped. Closing event channel...")
 	close(eventsChannel)
 
 	log.Println("Waiting for processor to finish...")
 	waitGroup.Wait()
 
-	log.Println("Shutdown complete.")
+	select {
+	case <-failBuild:
+		log.Println("Shutdown due to critical alert. Exiting with failure code.")
+		os.Exit(1)
+	default:
+		log.Println("Graceful shutdown complete. Exiting with success code.")
+		os.Exit(0)
+	}
 }
