@@ -94,6 +94,7 @@ func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsCh
 
 	for event := range eventsChannel {
 		fullCommand := readFullCommand(event.PID, string(bytes.TrimRight(event.BinPath[:], "\x00")))
+		log.Printf("[DEBUG] Processing command for PID %d: %s", event.PID, fullCommand)
 
 		for _, rule := range rules {
 			violation := false
@@ -133,6 +134,9 @@ func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsCh
 					"[ALERT] Rule '%s' (Severity: %s)\n\tDescription: %s\n\tCommand: %s\n\n",
 					rule.Id, rule.Severity, rule.Description, fullCommand,
 				)
+
+				log.Printf("[MATCH] Found a match for rule %s", rule.Id)
+
 				if reportFile != nil {
 					_, err := reportFile.WriteString(reportLine)
 					if err != nil {
