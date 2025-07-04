@@ -106,7 +106,7 @@ func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsCh
 						break
 					}
 				}
-			} else if len(rule.MatchAll) > 1 {
+			} else {
 				allFound := true
 				for _, pattern := range rule.MatchAll {
 					if !strings.Contains(fullCommand, pattern) {
@@ -117,7 +117,7 @@ func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsCh
 				violation = allFound
 			}
 
-			if len(rule.white_list) > 0 {
+			if violation && len(rule.white_list) > 0 {
 				for _, allowed := range rule.white_list {
 					if strings.Contains(fullCommand, allowed) {
 						fmt.Println("\nWhitelisted command found:")
