@@ -40,6 +40,7 @@ jobs:
         options: >-
           --pid=host
           --cap-add=SYS_ADMIN
+          --user ${{ job.container.id }}
           -v /sys/kernel/debug:/sys/kernel/debug:ro
           -v ${{ github.workspace }}/reports:/app/reports
 
