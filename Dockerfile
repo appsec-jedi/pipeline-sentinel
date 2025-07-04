@@ -8,7 +8,7 @@ RUN make
 
 FROM ubuntu:22.04
 
-RUN mkdir -p /app
+RUN mkdir -p /app/reports
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y curl python3

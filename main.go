@@ -82,39 +82,31 @@ func loadRules() []Rule {
 	return rules
 }
 
-func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsChannel <-chan Event, rules []Rule, failBuild chan<- bool, violationsChannel chan<- Violation) {
+func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsChannel <-chan Event, rules []Rule, failBuild chan<- bool) {
 	defer waitGroup.Done()
+
+	reportFilePath := "/app/reports/sentinel-report.txt"
+	reportFile, err := os.OpenFile(reportFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Error opening report file: %s", err)
+	}
+	defer reportFile.Close()
 
 	for event := range eventsChannel {
 		fullCommand := readFullCommand(event.PID, string(bytes.TrimRight(event.BinPath[:], "\x00")))
-		words := strings.Fields(fullCommand)
-		violation := false
 
 		for _, rule := range rules {
-			if rule.MatchCommand != "" {
+			violation := false
+			if len(rule.MatchAll) == 1 {
+				pattern := rule.MatchAll[0]
+				words := strings.Fields(fullCommand)
 				for _, word := range words {
-					if word == rule.MatchCommand || strings.HasSuffix(word, "/"+rule.MatchCommand) {
+					if word == pattern || strings.HasSuffix(word, "/"+pattern) {
 						violation = true
-						// switch rule.Severity {
-						// case "critical":
-						// 	color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-						// 		rule.Id, rule.Severity, fullCommand)
-						// 	failBuild <- true
-						// 	stopper <- syscall.SIGTERM
-						// 	return
-						// case "high":
-						// 	color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-						// 		rule.Id, rule.Severity, fullCommand)
-						// default:
-						// 	color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-						// 		rule.Id, rule.Severity, fullCommand)
-						// }
-						// break
+						break
 					}
 				}
-			}
-
-			if len(rule.MatchAll) > 0 {
+			} else if len(rule.MatchAll) > 1 {
 				allFound := true
 				for _, pattern := range rule.MatchAll {
 					if !strings.Contains(fullCommand, pattern) {
@@ -122,55 +114,41 @@ func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsCh
 						break
 					}
 				}
-				if allFound {
-					violation = true
-					if len(rule.white_list) > 0 {
-						for _, allowed := range rule.white_list {
-							if strings.Contains(fullCommand, allowed) {
-								fmt.Println("\nWhitelisted command found:")
-								fmt.Printf("\t%s", fullCommand)
-								violation = false
-								break
-							}
-						}
+				violation = allFound
+			}
+
+			if len(rule.white_list) > 0 {
+				for _, allowed := range rule.white_list {
+					if strings.Contains(fullCommand, allowed) {
+						fmt.Println("\nWhitelisted command found:")
+						fmt.Printf("\t%s", fullCommand)
+						violation = false
+						break
 					}
-					// switch rule.Severity {
-					// case "critical":
-					// 	color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-					// 		rule.Id, rule.Severity, fullCommand)
-					// 	failBuild <- true
-					// 	stopper <- syscall.SIGTERM
-					// 	return
-					// case "high":
-					// 	color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-					// 		rule.Id, rule.Severity, fullCommand)
-					// default:
-					// 	color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-					// 		rule.Id, rule.Severity, fullCommand)
-					// }
-					// break
 				}
 			}
+
 			if violation {
-				var violation Violation
-				violation.FullCommand = fullCommand
-				violation.Id = rule.Id
-				violation.Severity = rule.Severity
-				violation.Description = rule.Description
-				violationsChannel <- violation
+				reportLine := fmt.Sprintf(
+					"[ALERT] Rule '%s' (Severity: %s)\n\tDescription: %s\n\tCommand: %s\n\n",
+					rule.Id, rule.Severity, rule.Description, fullCommand,
+				)
+				if reportFile != nil {
+					_, err := reportFile.WriteString(reportLine)
+					if err != nil {
+						log.Printf("Error writing to file: %s", err)
+					}
+				}
 				switch rule.Severity {
 				case "critical":
-					color.Red("\n[CRITICAL ALERT] - Failing build\nRule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-						rule.Id, rule.Severity, fullCommand)
+					color.Red(reportLine)
 					failBuild <- true
 					stopper <- syscall.SIGTERM
 					return
 				case "high":
-					color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-						rule.Id, rule.Severity, fullCommand)
+					color.Yellow(reportLine)
 				default:
-					color.Yellow("\n[ALERT] Rule '%s' triggered (Severity: %s)\n\tCommand: %s\n",
-						rule.Id, rule.Severity, fullCommand)
+					color.Yellow(reportLine)
 				}
 				break
 			}
@@ -203,10 +181,9 @@ func main() {
 	var waitGroup sync.WaitGroup
 	eventsChannel := make(chan Event, 100)
 	failBuild := make(chan bool, 1)
-	violationsChannel := make(chan Violation, 100)
 
 	waitGroup.Add(1)
-	go processEvents(&waitGroup, stopper, eventsChannel, rules, failBuild, violationsChannel)
+	go processEvents(&waitGroup, stopper, eventsChannel, rules, failBuild)
 
 	log.Println("Successfully loaded and attached eBPF program. Waiting for events...")
 
@@ -248,29 +225,6 @@ func main() {
 
 	log.Println("Waiting for processor to finish...")
 	waitGroup.Wait()
-
-	select {
-	case _, check := <-violationsChannel:
-		if check {
-			file, err := os.Create("/app/reports/failure-report.txt")
-			if err != nil {
-				log.Printf("Error writing failure report: %s", err)
-			}
-			defer file.Close()
-
-			for violation := range violationsChannel {
-				violationString := "ID: " + violation.Id + "\n\tDescription: " + violation.Description + "\n\tSeverity: " + violation.Severity + "\n\tDetected Command: " + violation.FullCommand
-				_, err = file.WriteString(violationString)
-				if err != nil {
-					log.Printf("Error writing to file: %s", err)
-				}
-			}
-		} else {
-			log.Printf("violationsChannel was closed")
-		}
-	default:
-		log.Printf("No violations were found!")
-	}
 
 	select {
 	case <-failBuild:

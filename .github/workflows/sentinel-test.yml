@@ -42,17 +42,35 @@ jobs:
           --cap-add=SYS_ADMIN
           -v /sys/kernel/debug:/sys/kernel/debug:ro
           -v ${{ github.workspace }}/rules.yaml:/app/rules.yaml:ro
+          -v ${{ github.workspace }}/reports:/app/reports
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      
+      - name: Create report directory
+        run: mkdir -p reports
 
-      - name: Run Fake Build Script for Testing
+      - name: Run fake build script for testing
         run: |
           echo "Running the build script that the sentinel will monitor..."
           chmod +x ./fake_build_script.sh
           ./fake_build_script.sh
-
-      - name: Display Sentinel Logs
+      
+      - name: Show failure report on error
+        if: failure()
+        run: |
+          echo " "
+          echo "-------------------------------------------"
+          echo "---         BUILD FAILED                ---"
+          echo "--- Displaying Sentinel Failure Report: ---"
+          echo "-------------------------------------------"
+          cat reports/failure-report.txt
+          echo "-------------------------------------------"
+      
+      - name: Upload report
         if: always()
-        run: docker logs sentinel
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: reports/
