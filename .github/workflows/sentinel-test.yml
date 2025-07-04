@@ -41,7 +41,6 @@ jobs:
           --pid=host
           --cap-add=SYS_ADMIN
           -v /sys/kernel/debug:/sys/kernel/debug:ro
-          -v ${{ github.workspace }}/rules.yaml:/app/rules.yaml:ro
           -v ${{ github.workspace }}/reports:/app/reports
 
     steps:
