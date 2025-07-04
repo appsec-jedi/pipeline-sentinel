@@ -15,6 +15,6 @@ RUN apt-get update && apt-get install -y curl python3
 
 COPY --from=builder /src/pipeline-sentinel /usr/local/bin/pipeline-sentinel
 COPY fake_build_script.sh /app/fake_build_script.sh
-COPY rules.yaml /app/rules.yaml
+COPY rules/rules.yaml /app/rules.yaml
 
 ENTRYPOINT ["pipeline-sentinel"]
