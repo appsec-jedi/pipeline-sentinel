@@ -53,7 +53,7 @@ jobs:
       - name: Create report directory and test artifact
         run: mkdir -p reports
 
-      - run: docker logs ${{ job.services.sentinel.id }} > > test-sentinel-log.txt
+      - run: docker logs ${{ job.services.sentinel.id }} > test-sentinel-log.txt
       - uses: actions/upload-artifact@v4
         with:
           name: test-artifact
