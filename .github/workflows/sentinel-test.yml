@@ -61,7 +61,7 @@ jobs:
       
       - run: |
           cat sentinel-log.txt
-          if grep -q "CRITICAL" sentinel-log.txt; then
+          if grep -q "critical" sentinel-log.txt; then
             echo "Build FAILED due to critical alert found in logs."
             exit 1
           else
