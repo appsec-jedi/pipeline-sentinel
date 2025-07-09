@@ -50,11 +50,21 @@ jobs:
           chmod +x ./fake_build_script.sh
           ./fake_build_script.sh || true
       
-      - name: Create report directory and test artifact
+      - name: Create report directory and artifact
         run: mkdir -p reports
 
-      - run: docker logs ${{ job.services.sentinel.id }} > test-sentinel-log.txt
+      - run: docker logs ${{ job.services.sentinel.id }} > sentinel-log.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: test-artifact
-          path: test-sentinel-log.txt
+          name: build-artifact
+          path: sentinel-log.txt
+      
+      - run: |
+          cat sentinel-log.txt
+          if grep -q "CRITICAL" sentinel-log.txt; then
+            echo "Build FAILED due to critical alert found in logs."
+            exit 1
+          else
+            echo "Build successful. No critical alerts found."
+          fi
+
