@@ -82,7 +82,7 @@ func loadRules() []Rule {
 	return rules
 }
 
-func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsChannel <-chan Event, rules []Rule, failBuild chan<- bool) {
+func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsChannel <-chan Event, rules []Rule) {
 	defer waitGroup.Done()
 
 	reportFilePath := "/app/reports/sentinel-report.txt"
@@ -130,29 +130,20 @@ func processEvents(waitGroup *sync.WaitGroup, stopper chan<- os.Signal, eventsCh
 			}
 
 			if violation {
-				reportLine := fmt.Sprintf(
-					"[ALERT] Rule '%s' (Severity: %s)\n\tDescription: %s\n\tCommand: %s\n\n",
+				alertMessage := fmt.Sprintf(
+					"[ALERT] RuleID: %s | Severity: %s | Description: %s | Command: %s",
 					rule.Id, rule.Severity, rule.Description, fullCommand,
 				)
 
-				log.Printf("[MATCH] Found a match for rule %s", rule.Id)
-
-				if reportFile != nil {
-					_, err := reportFile.WriteString(reportLine)
-					if err != nil {
-						log.Printf("Error writing to file: %s", err)
-					}
-				}
 				switch rule.Severity {
 				case "critical":
-					color.Red(reportLine)
-					failBuild <- true
-					stopper <- syscall.SIGTERM
-					return
+					color.Red(alertMessage)
+					log.Println("CRITICAL alert found. Failing build.")
+					os.Exit(1)
 				case "high":
-					color.Yellow(reportLine)
+					color.Yellow(alertMessage)
 				default:
-					color.Yellow(reportLine)
+					color.HiBlack(alertMessage)
 				}
 				break
 			}
@@ -184,10 +175,9 @@ func main() {
 
 	var waitGroup sync.WaitGroup
 	eventsChannel := make(chan Event, 100)
-	failBuild := make(chan bool, 1)
 
 	waitGroup.Add(1)
-	go processEvents(&waitGroup, stopper, eventsChannel, rules, failBuild)
+	go processEvents(&waitGroup, stopper, eventsChannel, rules)
 
 	log.Println("Successfully loaded and attached eBPF program. Waiting for events...")
 
@@ -230,12 +220,6 @@ func main() {
 	log.Println("Waiting for processor to finish...")
 	waitGroup.Wait()
 
-	select {
-	case <-failBuild:
-		log.Println("Shutdown due to critical alert. Exiting with failure code.")
-		os.Exit(1)
-	default:
-		log.Println("Graceful shutdown complete. Exiting with success code.")
-		os.Exit(0)
-	}
+	log.Println("Graceful shutdown complete")
+	os.Exit(0)
 }

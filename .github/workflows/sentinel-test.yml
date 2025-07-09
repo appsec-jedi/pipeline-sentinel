@@ -41,39 +41,31 @@ jobs:
           --pid=host
           --cap-add=SYS_ADMIN
           -v /sys/kernel/debug:/sys/kernel/debug:ro
-          -v ${{ github.workspace }}/reports:/app/reports
+          -v ${{ github.workspace }}/rules.yaml:/app/rules.yaml:ro
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      
-      - name: Create report directory
-        run: mkdir -p reports
 
       - name: Run Fake Build Script for Testing
         run: |
           chmod +x ./fake_build_script.sh
           ./fake_build_script.sh || true
+      
+      - name: Create report directory
+        run: mkdir -p reports
 
-      - name: Check Sentinel for Critical Alerts and Fail Build
+      - name: Check Sentinel Logs and Finalize
+        if: always()
         run: |
-          echo "--- Checking Sentinel Logs for Critical Alerts ---"
-          # First, save the full log for artifact upload
-          docker logs sentinel > reports/sentinel-full-log.txt
-          
-          # Now, check for critical findings to fail the build
-          if grep -q "Severity: critical" reports/sentinel-full-log.txt; then
-            echo "Critical alert found in sentinel logs. Failing build."
-            echo "--- Full Sentinel Log ---"
-            cat reports/sentinel-full-log.txt
+          echo "--- Sentinel Logs ---"
+          docker logs ${{ job.services.sentinel.id }} > sentinel-log.txt 2>&1
+          cat sentinel-log.txt
+
+          echo "--- Checking for Critical Alerts ---"
+          if grep -q "CRITICAL" sentinel-log.txt; then
+            echo "Build FAILED due to critical alert found in logs."
             exit 1
           else
-            echo "No critical alerts found. Build successful."
+            echo "Build successful. No critical alerts found."
           fi
-      
-      - name: Upload Sentinel Log as Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-log-report
-          path: reports/sentinel-full-log.txt
