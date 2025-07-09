@@ -50,30 +50,30 @@ jobs:
       - name: Create report directory
         run: mkdir -p reports
 
-      - name: Run fake build script for testing
+      - name: Run Fake Build Script for Testing
         run: |
-          echo "Running the build script that the sentinel will monitor..."
           chmod +x ./fake_build_script.sh
-          ./fake_build_script.sh
-      
-      - name: Show failure report on error
-        if: failure()
+          ./fake_build_script.sh || true
+
+      - name: Check Sentinel for Critical Alerts and Fail Build
         run: |
-          echo " "
-          echo "-------------------------------------------"
-          echo "---         BUILD FAILED                ---"
-          echo "--- Displaying Sentinel Failure Report: ---"
-          echo "-------------------------------------------"
-          cat reports/failure-report.txt
-          echo "-------------------------------------------"
+          echo "--- Checking Sentinel Logs for Critical Alerts ---"
+          # First, save the full log for artifact upload
+          docker logs sentinel > reports/sentinel-full-log.txt
+          
+          # Now, check for critical findings to fail the build
+          if grep -q "Severity: critical" reports/sentinel-full-log.txt; then
+            echo "Critical alert found in sentinel logs. Failing build."
+            echo "--- Full Sentinel Log ---"
+            cat reports/sentinel-full-log.txt
+            exit 1
+          else
+            echo "No critical alerts found. Build successful."
+          fi
       
-      - name: Upload report
+      - name: Upload Sentinel Log as Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sentinel-report
-          path: reports/
-
-      - name: Fix Workspace Permissions
-        if: always()
-        run: sudo chown -R $USER:$USER ${{ github.workspace }}
+          name: sentinel-log-report
+          path: reports/sentinel-full-log.txt
