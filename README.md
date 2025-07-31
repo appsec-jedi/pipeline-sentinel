@@ -2,6 +2,8 @@
 
 **A lightweight, eBPF-powered security monitor for CI/CD build pipelines.**
 
+**[Read the Full Research Paper](./docs/Pipeline_Sentinel_Research_Paper.pdf)**
+
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/appsec-jedi/pipeline-sentinel/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
